@@ -1,4 +1,4 @@
-local Entity = require("src.game.entity.Entity")
+local Entity = require("src.objects.entity.Entity")
 
 
 local LivingEntity = Entity:subclass("LivingEntity")

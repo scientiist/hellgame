@@ -19,11 +19,11 @@ function love.update(delta)
 	if not (updateTrack > (1/60)) then return end
 	updateTrack = 0
 
-	GameLoop:step()
+	GameLoop:step(delta)
 
 	if tick > (1/20) then
 		tick = 0
-		GameLoop:tick()
+		GameLoop:tick(delta)
 	end
 
 end

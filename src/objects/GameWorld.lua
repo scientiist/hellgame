@@ -12,6 +12,21 @@ function GameWorld:init()
 	self.cameraPosition = Point:new(0, 0)
 	self.cameraSize = Point:new(256, 224)
 	self.font = love.graphics.newFont(12)
+	self.tileSize = 8
+
+end
+
+function GameWorld:populateTilemap()
+	for y = 1, 42 do
+		self.tilemap[y] = {}
+		for x = 1, 200 do
+			self.tilemap[y][x] = 0
+		end
+	end
+end
+
+function GameWorld:setTile(x, y, tile)
+	self.tilemap[y][x] = tile
 end
 
 function GameWorld:addEntity(entity)
@@ -52,7 +67,16 @@ function GameWorld:render()
 	
 	-- ok start the real rendering
     love.graphics.push()
-    love.graphics.translate(self.cameraPosition.x, self.cameraPosition.y)
+	love.graphics.translate(self.cameraPosition.x, self.cameraPosition.y)
+	
+	for yIndex, xTable in pairs(self.tilemap) do
+		for xIndex, tile in pairs(xTable) do
+			if tile == 1 then
+				love.graphics.setColor(0.2, 1, 0.2)
+				love.graphics.rectangle("fill", (xIndex-1)*self.tileSize, (yIndex-1)*self.tileSize, self.tileSize, self.tileSize)
+			end
+		end
+	end
 
     -- check if entity is within bounds to be rendered
     for idx, entity in pairs(self.entities) do
@@ -83,9 +107,9 @@ function GameWorld:update(delta)
 		end
 
 		-- lastly, let's update the entities on screen
-		if self:isEntityVisible(entity) then
+		if (entity.pauseWhenOffScreen == false) or self:isEntityVisible(entity) then
 			entity:update(delta)
-		end
+		end 
 
     end
 end
