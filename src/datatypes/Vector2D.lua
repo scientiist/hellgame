@@ -4,7 +4,7 @@ setmetatable(Vector2D,{
     __index = Vector2D,
     __add = function(a, b) return Vector2D:new(a.x + b.x, a.y + b.y) end,
     __mul = function(a, b) return Vector2D:new(a.x * b.x, a.y * b.y) end,
-    __tostring = function(a) return "("..a.x..','..a.y..")" end
+    __tostring = function(a) return "Vector2D" end
 })
 
 function Vector2D:new(x, y)

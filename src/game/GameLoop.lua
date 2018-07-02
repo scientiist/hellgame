@@ -1,6 +1,10 @@
-local GameWorld = require("src.objects.GameWorld")
-local Entity = require("src.objects.entity.Entity")
-local Player = require("src.objects.entity.Player")
+--| imports
+	local GameWorld  = require("src.game.GameWorld")
+	local Entity     = require("src.game.entity.Entity")
+	local Player     = require("src.game.entity.Player")
+	local Vector2D   = require("src.datatypes.Vector2D")
+	local TestEntity = require("src.game.entity.TestEntity")
+--|
 
 local GameLoop = {}
 
@@ -10,16 +14,20 @@ local settings = {
 }
 
 local testRoom = GameWorld:new()
-testRoom:populateTilemap()
-for i = 1, 100 do
-	testRoom:setTile(i, 16, 1)
-end
-testRoom:setTile(2, 15, 1)
-testRoom:setTile(2, 14, 1)
+testRoom:loadMap("test2")
+
 
 local player = Player:new()
 
+print(player.hasMass)
+
+
 testRoom:addEntity(player)
+
+player.position = Vector2D:new(20*8, 27*8)
+player.nextPosition = Vector2D:new(20*8, 27*8)
+
+--testRoom:addEntity(testentity)
 
 function GameLoop:initialize()
 	
@@ -36,6 +44,8 @@ end
 
 function GameLoop:step(delta)
 	testRoom:update(delta)
+
+
 end
 
 function GameLoop:render()
@@ -44,6 +54,10 @@ function GameLoop:render()
 	----------------------------------
 
 	testRoom:render()
+
+	love.graphics.setColor(0.6, 0.6, 0.6, 0.6)
+	love.graphics.rectangle("fill", testRoom.cameraPosition.x+(math.floor(love.mouse.getX()/8)*8), testRoom.cameraPosition.y+(math.floor(love.mouse.getY()/8)*8), 8, 8)
+	love.graphics.setColor(1, 1, 1)
 
 	----------------------------------
     love.graphics.pop()

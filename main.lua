@@ -4,6 +4,7 @@
 
 local GameLoop = require("src.game.GameLoop")
 
+local Yaci = require("src.libs.Yaci")
 
 function love.load()	
 	GameLoop:initialize()

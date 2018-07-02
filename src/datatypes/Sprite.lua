@@ -1,4 +1,4 @@
-local AssetLoader = require("src.utils.AssetLoader")
+local LoveImage = require("src.datatypes.LoveImage")
 
 local Sprite = {}
 
@@ -8,10 +8,15 @@ setmetatable(Sprite,{
     
 })
 
-function Sprite:new(imageSource, frameWidth)
-    local img = AssetLoader:loadImage(imageSource)
+function Sprite:new(imageSource, frameWidth, frameHeight)
+    local img = LoveImage:new(imageSource)
     local x, y = img:getDimensions()
-    local slices = x/frameWidth
+
+    frameWidth = frameWidth or x
+    frameHeight = frameHeight or y
+
+    local xslices = x/frameWidth
+    local yslices = y/frameHeight
     local newSpr = {
         frames = {},
         image = img,
@@ -19,15 +24,20 @@ function Sprite:new(imageSource, frameWidth)
         height = y
     }
 
-    for i = 1, slices do
-        newSpr.frames[i] = love.graphics.newQuad((i-1)*frameWidth+(i-1), 0, frameWidth, y, img:getDimensions())
+    local i = 1
+    for y = 1, yslices do
+        for x = 1, xslices do
+            
+            newSpr.frames[i] = love.graphics.newQuad((x-1)*frameWidth, (y-1)*frameHeight, frameWidth, frameHeight, img:getDimensions())
+            i = i + 1
+        end
     end
 
     return setmetatable(newSpr, getmetatable(self))
 end
 
 function Sprite:getFrame(index)
-    return self.frames[index]
+    return self.frames[index] or self.frames[1]
 end
 
 function Sprite:getImage()
