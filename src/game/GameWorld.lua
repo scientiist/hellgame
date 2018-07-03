@@ -1,9 +1,12 @@
 --| imports
-	local Yaci     = require("src.libs.Yaci")
-	local Vector2D = require("src.datatypes.Vector2D")
-	local Rect     = require("src.datatypes.Rect")
+	local Yaci      = require("src.libs.Yaci")
+	local Vector2D  = require("src.datatypes.Vector2D")
+	local Rect      = require("src.datatypes.Rect")
 	local LoveImage = require("src.datatypes.LoveImage")
+	local Math      = require("src.utils.Math")
 --|
+
+local TileLayer = Yaci:newclass("TileLayer")
 
 local GameWorld = Yaci:newclass("GameWorld")
 
@@ -18,10 +21,17 @@ function GameWorld:init()
 	self.font = love.graphics.newFont(12)
 	self.tileSize = 8
 	self.staticCamera = false
+	self.cameraFocus = nil
+
+	self.width = 0
+	self.height = 0
 end
 
 function GameWorld:loadMap(mapName)
 	local mapData = require("assets/levels/"..mapName)
+
+	self.width = mapData["width"]
+	self.height = mapData["height"]
 
 	for index, tileset in pairs(mapData["tilesets"]) do
 		print("load tileset", tileset["name"])
@@ -71,6 +81,10 @@ function GameWorld:loadMap(mapName)
 		end
 	end
 	
+end
+
+function GameWorld:setCameraFocus(entity)
+	self.cameraFocus = entity
 end
 
 function GameWorld:getTile(layer, x, y, tile)
@@ -172,6 +186,15 @@ function GameWorld:render()
 end
 
 function GameWorld:update(delta)
+
+	if self.cameraFocus then
+		local entity = self.cameraFocus
+		local camX = Math:clamp(entity.position.x-entity.body.halfWidth - (self.cameraSize.x/2), 1, self.width*self.tileSize)
+		local camY = Math:clamp(entity.position.y-entity.body.halfHeight - (self.cameraSize.y/2), 1, self.height*self.tileSize)
+
+		self.cameraPosition = Vector2D:new(camX, camY)
+	end
+
     for idx, entity in pairs(self.entities) do
 
         -- remove entities marked for destruction
@@ -194,60 +217,50 @@ function GameWorld:update(delta)
 		
 		local applyGravity = true
 
-		for tileID, x, y in self:iterateLayer(self.tilemap["Collide"]) do
+		for tileID, xIndex, yIndex in self:iterateLayer(self.tilemap["Collide"]) do
 			if tileID > 0 then 
-				
-			end
-		end
+				local extents = entity:getNextFrameExtents()
 
-	--[[for yIndex, xTable in pairs(self.tilemap) do
-			for xIndex, tile in pairs(xTable) do
-				if tile == 1 then
-					local extents = entity:getNextFrameExtents()
-
-					local x = (xIndex-1)*self.tileSize
-					local y = (yIndex-1)*self.tileSize
-					local half = self.tileSize/2
+				local x = (xIndex-1)*self.tileSize
+				local y = (yIndex-1)*self.tileSize
+				local half = self.tileSize/2
 					
-					local tileBounds = Rect:new(x+half, y+half, half, half)
-					local sx, sy = extents:overlaps(tileBounds)
-					if sx and sy then
+				local tileBounds = Rect:new(x+half, y+half, half, half)
+				local sx, sy = extents:overlaps(tileBounds)
+				if sx and sy then
 						
-						-- find collision normal
-						local d = math.sqrt(sx*sx + sy*sy)
-						local nx, ny = sx/d, sy/d
+					-- find collision normal
+					local d = math.sqrt(sx*sx + sy*sy)
+					local nx, ny = sx/d, sy/d
 
-						--print(nx, ny)
-						-- relative velocity
-						local vx, vy = entity.velocity.x, entity.velocity.y
+					--print(nx, ny)
+					-- relative velocity
+					local vx, vy = entity.velocity.x, entity.velocity.y
 
-						-- penetration speed
-						local ps = vx*nx + vy*ny
+					-- penetration speed
+					local ps = vx*nx + vy*ny
 
-						if ps <= 0 then
-							entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
-							entity:collisionTileCallback(tile, nx, ny)
-							if ny == -1 then
-								if entity.hasMass then
-									applyGravity = false
-									entity.velocity.y = 0
-									entity.isTouchingGround = true
-								end
+					if ps <= 0 then
+						entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
+						entity:collisionTileCallback(tile, nx, ny)
+						if ny == -1 then
+							if entity.hasMass then
+								applyGravity = false
+								entity.velocity.y = 0
+								entity.isTouchingGround = true
 							end
-
-							if ny == 1 then
-								entity.velocity.y = -(entity.velocity.y*0.2)
-							end
-							
 						end
 
+						if ny == 1 then
+							entity.velocity.y = -(entity.velocity.y*0.2)
+						end			
 					end
 				end
 			end
-		end]]
+		end
 
 		if applyGravity == true then
-			--entity.velocity.y = entity.velocity.y + 0.5
+			entity.velocity.y = entity.velocity.y + 0.5
 			if entity.velocity.y > 4 then entity.velocity.y = 4 end
 		end
 

@@ -39,7 +39,7 @@ function Player:update(delta)
     self.super:update(delta)
 
     -- orient the world camera position around the player
-    self.world.cameraPosition = Vector2D:new(self.position.x-self.body.halfWidth - (self.world.cameraSize.x/2), self.position.y+self.body.halfHeight - (self.world.cameraSize.y/2))
+
 
 
 
@@ -50,18 +50,18 @@ function Player:update(delta)
         self.isMoving = true
         self.directionX = -1
         --self.position = self.position + Point:new(-1.5, 0)
-        self.velocity = Vector2D:new(-1.5, self.velocity.y)
+        self.velocity = Vector2D:new(-1.75, self.velocity.y)
     end
 
     if love.keyboard.isDown("right") then
         self.isMoving = true
         self.directionX = 1
        --self.position = self.position + Point:new(1.5, 0)
-       self.velocity = Vector2D:new(1.5, self.velocity.y)
+       self.velocity = Vector2D:new(1.75, self.velocity.y)
     end
 
     if love.keyboard.isDown("up") and self.isTouchingGround then
-        self.velocity.y = -6
+        self.velocity.y = -8
     end
 
     self:animation()

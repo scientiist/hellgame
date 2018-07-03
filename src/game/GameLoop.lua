@@ -23,6 +23,7 @@ print(player.hasMass)
 
 
 testRoom:addEntity(player)
+testRoom:setCameraFocus(player)
 
 player.position = Vector2D:new(20*8, 27*8)
 player.nextPosition = Vector2D:new(20*8, 27*8)
