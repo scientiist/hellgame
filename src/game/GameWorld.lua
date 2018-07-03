@@ -4,11 +4,16 @@
 	local Rect      = require("src.datatypes.Rect")
 	local LoveImage = require("src.datatypes.LoveImage")
 	local Math      = require("src.utils.Math")
+	local Player    = require("src.game.entity.Player")
 --|
 
 local TileLayer = Yaci:newclass("TileLayer")
 
 local GameWorld = Yaci:newclass("GameWorld")
+
+local EntityLoaderList = {
+	["Player"] = Player
+}
 
 function GameWorld:init()
 	self.name = "GameWorld"
@@ -38,7 +43,6 @@ function GameWorld:loadMap(mapName)
 		local newTileset = {}
 
 		local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
-
 
 		local imageHeight = tileset["imageheight"]
 		local imageWidth = tileset["imagewidth"]
@@ -77,7 +81,19 @@ function GameWorld:loadMap(mapName)
 		end
 
 		if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
+			for index, entity in pairs(layer["objects"]) do
+				local type = entity["type"]
+				local entityClass = EntityLoaderList[type]
 
+				local instance = entityClass:new()
+
+				instance:setPosition(Vector2D:new(entity["x"], entity["y"]))
+				self:addEntity(instance)
+
+				if entity["properties"]["takeCameraFocus"] == true then
+					self:setCameraFocus(instance)
+				end
+			end
 		end
 	end
 	
@@ -189,8 +205,8 @@ function GameWorld:update(delta)
 
 	if self.cameraFocus then
 		local entity = self.cameraFocus
-		local camX = Math:clamp(entity.position.x-entity.body.halfWidth - (self.cameraSize.x/2), 1, self.width*self.tileSize)
-		local camY = Math:clamp(entity.position.y-entity.body.halfHeight - (self.cameraSize.y/2), 1, self.height*self.tileSize)
+		local camX = Math:clamp(entity.position.x-entity.body.halfWidth - (self.cameraSize.x/2), 1, (self.width*self.tileSize) -(self.cameraSize.x))
+		local camY = Math:clamp(entity.position.y-entity.body.halfHeight - (self.cameraSize.y/2), 1, (self.height*self.tileSize) -(self.cameraSize.y))
 
 		self.cameraPosition = Vector2D:new(camX, camY)
 	end

@@ -22,7 +22,7 @@ local Entity = Yaci:newclass("Entity")
 
 function Entity:init()
     self.position = Vector2D:new(50, 50)
-    self.nextPosition = self.position
+    self.nextPosition = Vector2D:new(0, 0)
     self.directionX = 1
     self.directionY = 1
     self.spriteFrame = 1
@@ -41,8 +41,12 @@ function Entity:collisionTileCallback(tileID, normalX, normalY)
 
 end
 
+function Entity:setPosition(pos)
+    self.position = pos
+end
+
 function Entity:getNextFrameExtents()
-    return (self.body):addVec(self.nextPosition)
+    return (self.body):addVec(self.position + self.nextPosition)
 end
 
 function Entity:clean()
@@ -54,10 +58,10 @@ function Entity:getPosition()
 end
 
 function Entity:update(delta)
-    self.position = self.nextPosition
+    self.position = self.position + self.nextPosition
 
 
-    self.nextPosition = Vector2D:new(self.nextPosition.x + self.velocity.x, self.nextPosition.y + self.velocity.y)
+    self.nextPosition = Vector2D:new(self.velocity.x, self.velocity.y)
 end
 
 
@@ -67,9 +71,9 @@ function Entity:render()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(self.sprite:getImage(), self.sprite:getFrame(self.spriteFrame), self.position.x, self.position.y, 0, self.directionX, self.directionY, self.sprite:getWidth()/2, self.sprite:getHeight()/2)
     --love.graphics.rectangle("line", renderX, renderY, self.body.x2, self.body.y2)
-    love.graphics.setLineWidth(0)
+   --[[ love.graphics.setLineWidth(0)
     love.graphics.setColor(1, 0.5, 0)
-    love.graphics.rectangle("line", renderX, renderY, self.body.halfWidth*2, self.body.halfHeight*2)
+    love.graphics.rectangle("line", renderX, renderY, self.body.halfWidth*2, self.body.halfHeight*2)]]
 
     --print(self, self:class())
 end

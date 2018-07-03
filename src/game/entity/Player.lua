@@ -61,7 +61,7 @@ function Player:update(delta)
     end
 
     if love.keyboard.isDown("up") and self.isTouchingGround then
-        self.velocity.y = -8
+        self.velocity.y = -6
     end
 
     self:animation()
