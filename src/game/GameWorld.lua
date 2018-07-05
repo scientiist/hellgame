@@ -27,76 +27,94 @@ function GameWorld:init()
 	self.tileSize = 8
 	self.staticCamera = false
 	self.cameraFocus = nil
+	self.debug = false
+	self.mapLoaded = false
+	self.loadingStatus = "Loading..."
 
 	self.width = 0
 	self.height = 0
 end
 
 function GameWorld:loadMap(mapName)
-	local mapData = require("assets/levels/"..mapName)
+	local co = coroutine.create(function()
+		self.loadingStatus = "Getting mapdata file..."
+		local mapData = require("assets/levels/"..mapName)
 
-	self.width = mapData["width"]
-	self.height = mapData["height"]
+		self.width = mapData["width"]
+		self.height = mapData["height"]
 
-	for index, tileset in pairs(mapData["tilesets"]) do
-		print("load tileset", tileset["name"])
-		local newTileset = {}
+		self.loadingStatus = "Loading tiles..."
+		coroutine.yield()
+		for index, tileset in pairs(mapData["tilesets"]) do
+			self.loadingStatus = "Loading tileset " .. tileset["name"] .. "..."
+			coroutine.yield()
+			local newTileset = {}
 
-		local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
+			local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
 
-		local imageHeight = tileset["imageheight"]
-		local imageWidth = tileset["imagewidth"]
-
-
-
-		self.tilesets[tileset["name"]] = newTileset
-
-		local i = 0
-		for y = 1, imageHeight/self.tileSize do
-			for x = 1, imageWidth/self.tileSize do
-				
-				print("newtile", i+tileset["firstgid"])
-				self.tiles[i+tileset["firstgid"]] = {
-					image = image,
-					quad = love.graphics.newQuad((x-1)*self.tileSize, (y-1)*self.tileSize, self.tileSize, self.tileSize, image:getDimensions())
-				}
-				i = i + 1
-			end
-		end
-	end
+			local imageHeight = tileset["imageheight"]
+			local imageWidth = tileset["imagewidth"]
 
 
-	
-	for index, layer in pairs(mapData["layers"]) do
-		if layer["type"] == "tilelayer" then
-			local newLayer = {}
+			newTileset.image = image
+			self.tilesets[tileset["name"]] = newTileset
 
-			print("load tilelayer", layer["name"])
-
-			newLayer["data"] = layer["data"]
-			newLayer["width"] = layer["width"]
-			newLayer["height"] = layer["height"]
-
-			self.tilemap[layer["name"]] = newLayer
-		end
-
-		if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
-			for index, entity in pairs(layer["objects"]) do
-				local type = entity["type"]
-				local entityClass = EntityLoaderList[type]
-
-				local instance = entityClass:new()
-
-				instance:setPosition(Vector2D:new(entity["x"], entity["y"]))
-				self:addEntity(instance)
-
-				if entity["properties"]["takeCameraFocus"] == true then
-					self:setCameraFocus(instance)
+			local i = 0
+			for y = 1, imageHeight/self.tileSize do
+				for x = 1, imageWidth/self.tileSize do
+					
+					self.tiles[i+tileset["firstgid"]] = {
+						image = self.tilesets[tileset["name"]].image,
+						quad = love.graphics.newQuad((x-1)*self.tileSize, (y-1)*self.tileSize, self.tileSize, self.tileSize, image:getDimensions())
+					}
+					i = i + 1
 				end
 			end
 		end
-	end
-	
+
+
+		self.loadingStatus = "Loading layers..."
+		coroutine.yield()
+		for index, layer in pairs(mapData["layers"]) do
+			if layer["type"] == "tilelayer" then
+
+				local newLayer = {}
+
+				self.loadingStatus = "Loading tilelayer ".. layer["name"]
+				coroutine.yield()
+
+				newLayer["data"] = layer["data"]
+				newLayer["width"] = layer["width"]
+				newLayer["height"] = layer["height"]
+
+				self.tilemap[layer["name"]] = newLayer
+			end
+
+			if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
+				self.loadingStatus = "Loading objects..."
+				coroutine.yield()
+				for index, entity in pairs(layer["objects"]) do
+					local type = entity["type"]
+					local entityClass = EntityLoaderList[type]
+					if entityClass then
+						local instance = entityClass:new()
+
+						instance:setPosition(Vector2D:new(entity["x"], entity["y"]))
+						self:addEntity(instance)
+
+						if entity["properties"]["takeCameraFocus"] == true then
+							self:setCameraFocus(instance)
+						end
+					end
+				end
+			end
+		end
+		self.loadingStatus = "Done!"
+		self.mapLoaded = true
+		coroutine.yield()
+	end)
+
+	return co
 end
 
 function GameWorld:setCameraFocus(entity)
@@ -148,22 +166,73 @@ function GameWorld:iterateLayer(layer)
 	end
 end
 
+function GameWorld:visibleLayerIterate(layer)
+
+	local camPosX, camPosY = self.cameraPosition.x, self.cameraPosition.y
+	local camSizeX, camSizeY = self.cameraSize.x, self.cameraSize.y
+
+	local gridPosX, gridPosY = math.floor(camPosX/self.tileSize), math.floor(camPosY/self.tileSize)
+
+	local gridSizeX, gridSizeY = math.floor(camSizeX/self.tileSize), math.floor(camSizeY/self.tileSize)
+
+	local topLeftX, topLeftY = gridPosX-1, gridPosY-1
+	local bottomLeftX, bottomLeftY = (gridPosX+gridSizeX)+1, (gridPosY+gridSizeY)+1
+	
+	local minX, minY = topLeftX, topLeftY
+	local maxX, maxY = bottomLeftX, bottomLeftY
+
+	minX = (minX > 0) and minX or 1
+	minY = (minY > 0) and minY or 0
+
+
+	local width = layer["width"]
+	local height = layer["height"]
+
+	maxX = (maxX <= width) and maxX or width
+	maxY = (maxY <= height) and maxY or height
+
+	local minIndex = minX + minY*width
+	local maxIndex = maxX + maxY*width
+
+
+
+	local idx = minIndex-1
+
+	return function()
+		idx = idx + 1
+		if idx > maxIndex then return end
+
+		
+
+		local tileID = layer["data"][idx]
+		local i = idx - 1
+		local x = i%width
+		local y = (i - x)/width
+		x, y = x + 1, y + 1
+		return tileID, x, y
+	end
+
+end
+
 function GameWorld:renderLayer(layer)
 	love.graphics.setColor(1, 1, 1)
-	for tileID, x, y in self:iterateLayer(layer) do
 
-			
-		if not (tileID == 0) then
-			
+
+
+	for tileID, x, y in self:visibleLayerIterate(layer) do
+		
+
+		if tileID > 0 then
 			local tile = self.tiles[tileID]
-
 			love.graphics.draw(tile.image, tile.quad, (x-1)*self.tileSize, (y-1)*self.tileSize)
 		end
 	end
+
+
 end
 
 function GameWorld:render()
-	
+
 	-- ok start the real rendering
 	love.graphics.push()
 	love.graphics.translate(-self.cameraPosition.x, -self.cameraPosition.y)
@@ -213,27 +282,14 @@ function GameWorld:update(delta)
 
     for idx, entity in pairs(self.entities) do
 
-        -- remove entities marked for destruction
-        if entity.markedForRemoval then
-            self.entities[idx] = nil
-            return
-        end
-
-		-- if entities should be destroyed offscreen
-		-- check for them and do so here
-		if entity.destroyWhenOffScreen then
-			if not self:isEntityVisible(entity) then
-				entity:destroy()
-				return
-			end
-		end
 
 		entity.isTouchingGround = false
 
 		
 		local applyGravity = true
 
-		for tileID, xIndex, yIndex in self:iterateLayer(self.tilemap["Collide"]) do
+		--for tileID, xIndex, yIndex in self:iterateLayer(self.tilemap["Collide"]) do
+		for tileID, xIndex, yIndex in self:visibleLayerIterate(self.tilemap["Collide"]) do
 			if tileID > 0 then 
 				local extents = entity:getNextFrameExtents()
 
@@ -257,32 +313,55 @@ function GameWorld:update(delta)
 					local ps = vx*nx + vy*ny
 
 					if ps <= 0 then
-						entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
+						if entity.destroyOnTileCollide == true then
+							entity.markedForRemoval = true
+							entity:destroy()
+						else
+							entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
+						end
 						entity:collisionTileCallback(tile, nx, ny)
 						if ny == -1 then
-							if entity.hasMass then
+							if entity.hasMass == true then
 								applyGravity = false
 								entity.velocity.y = 0
 								entity.isTouchingGround = true
 							end
 						end
-
 						if ny == 1 then
-							entity.velocity.y = -(entity.velocity.y*0.2)
-						end			
+							if entity.hasMass then
+								entity.velocity.y = -(entity.velocity.y*0.3)
+							end
+						end
 					end
 				end
 			end
 		end
 
-		if applyGravity == true then
+
+		if applyGravity == true and entity.hasMass == true then
 			entity.velocity.y = entity.velocity.y + 0.5
-			if entity.velocity.y > 4 then entity.velocity.y = 4 end
+			if entity.velocity.y > 5 then entity.velocity.y = 5 end
 		end
 
 		-- lastly, let's update the entities on screen
 		if (entity.pauseWhenOffScreen == false) or self:isEntityVisible(entity) then
 			entity:update(delta)
+		end
+
+		-- remove entities marked for destruction
+        if entity.markedForRemoval then
+            self.entities[idx] = nil
+            --return
+        end
+
+		-- if entities should be destroyed offscreen
+		-- check for them and do so here
+		if entity.destroyWhenOffScreen then
+			if not self:isEntityVisible(entity) then
+				entity:destroy()
+				entity.markedForRemoval = true
+				--return
+			end
 		end
 
     end

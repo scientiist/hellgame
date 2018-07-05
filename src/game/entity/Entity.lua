@@ -19,6 +19,7 @@ local Entity = Yaci:newclass("Entity")
     Entity.hasMass = false
     Entity.pauseWhenOffScreen = false
     Entity.destroyWhenOffScreen = false
+    Entity.destroyOnTileCollide = false
 
 function Entity:init()
     self.position = Vector2D:new(50, 50)
@@ -71,11 +72,13 @@ function Entity:render()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(self.sprite:getImage(), self.sprite:getFrame(self.spriteFrame), self.position.x, self.position.y, 0, self.directionX, self.directionY, self.sprite:getWidth()/2, self.sprite:getHeight()/2)
     --love.graphics.rectangle("line", renderX, renderY, self.body.x2, self.body.y2)
-   --[[ love.graphics.setLineWidth(0)
-    love.graphics.setColor(1, 0.5, 0)
-    love.graphics.rectangle("line", renderX, renderY, self.body.halfWidth*2, self.body.halfHeight*2)]]
+    if self.world.debug then
+        love.graphics.setLineWidth(0)
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.rectangle("line", renderX, renderY, self.body.halfWidth*2, self.body.halfHeight*2)
+    end
 
-    --print(self, self:class())
+    --print(self, self:class())]
 end
 
 

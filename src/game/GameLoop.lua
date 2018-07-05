@@ -14,11 +14,13 @@ local settings = {
 }
 
 local testRoom = GameWorld:new()
-testRoom:loadMap("test2")
+local loadThread = testRoom:loadMap("test3")
+
+
 
 
 function GameLoop:initialize()
-	
+	love.graphics.setDefaultFilter("nearest", "nearest")
     love.window.setMode(settings.resolution.x*settings.upscale, settings.resolution.y*settings.upscale, {
 		resizable = false,
 		fullscreen = false,
@@ -31,21 +33,29 @@ function GameLoop:tick()
 end
 
 function GameLoop:step(delta)
-	testRoom:update(delta)
+	if testRoom.mapLoaded == true then
+		testRoom:update(delta)
+	else
+		love.timer.sleep(1/10)
+		coroutine.resume(loadThread)
+	end
+	
 
 
 end
 
 function GameLoop:render()
+	
 	love.graphics.push()
 	love.graphics.scale(settings.upscale, settings.upscale)
 	----------------------------------
+	if testRoom.mapLoaded then
+		testRoom:render()
+	else
+		
+		love.graphics.printf(testRoom.loadingStatus, 0, testRoom.cameraSize.y/2, testRoom.cameraSize.x, "center")
+	end
 
-	testRoom:render()
-
-	love.graphics.setColor(0.6, 0.6, 0.6, 0.6)
-	love.graphics.rectangle("fill", testRoom.cameraPosition.x+(math.floor(love.mouse.getX()/8)*8), testRoom.cameraPosition.y+(math.floor(love.mouse.getY()/8)*8), 8, 8)
-	love.graphics.setColor(1, 1, 1)
 
 	----------------------------------
     love.graphics.pop()

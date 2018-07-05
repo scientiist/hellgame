@@ -7,12 +7,13 @@
     local Rect         = require("src.datatypes.Rect")
     local Vector2D     = require("src.datatypes.Vector2D")
     local Sprite       = require("src.datatypes.Sprite")
+    local Bullet       = require("src.game.entity.Bullet")
 --|
 
 local Player = LivingEntity:subclass("Player")
     Player.hasMass = true
     Player.sprite = Sprite:new("assets/image/sprite/player.png", 16)
-    Player.body = Rect:new(0, 0, 6, 12)
+    Player.body = Rect:new(0, 0, 4, 12)
 
 function Player:init()
     
@@ -20,6 +21,7 @@ function Player:init()
     self.isMoving = false
     self.deltaTracker = 0
     self.nextFramePos = self.position
+    self.canShoot = true
 end
 
 function Player:animation(delta)
@@ -37,10 +39,6 @@ end
 
 function Player:update(delta)
     self.super:update(delta)
-
-    -- orient the world camera position around the player
-
-
 
 
     self.deltaTracker = self.deltaTracker + delta
@@ -64,12 +62,20 @@ function Player:update(delta)
         self.velocity.y = -6
     end
 
+    if love.keyboard.isDown("space") then
+        if self.canShoot == true then
+            for i = 1, 3 do
+                local newBullet = Bullet:new(self.position+Vector2D:new(10*self.directionX, -2), self.directionX)
+                self.world:addEntity(newBullet)
+            end
+            self.canShoot = false
+        end
+    else
+        self.canShoot = true
+    end
+
     self:animation()
 
-end
-
-function Player:draw()
-    self.super:draw()
 end
 
 return Player
