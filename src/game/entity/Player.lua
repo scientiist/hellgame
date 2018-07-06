@@ -22,6 +22,7 @@ function Player:init()
     self.deltaTracker = 0
     self.nextFramePos = self.position
     self.canShoot = true
+    self.shootWait = 0
 end
 
 function Player:animation(delta)
@@ -35,6 +36,8 @@ function Player:animation(delta)
     else
         self.spriteFrame = 1
     end
+
+    self.shootWait = self.shootWait - 0.1
 end
 
 function Player:update(delta)
@@ -68,10 +71,13 @@ function Player:update(delta)
                 local newBullet = Bullet:new(self.position+Vector2D:new(10*self.directionX, -2), self.directionX)
                 self.world:addEntity(newBullet)
             end
+            self.shootWait = 1
             self.canShoot = false
         end
     else
-        self.canShoot = true
+        if self.shootWait < 0 then
+            self.canShoot = true
+        end
     end
 
     self:animation()

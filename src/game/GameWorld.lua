@@ -5,9 +5,11 @@
 	local LoveImage = require("src.datatypes.LoveImage")
 	local Math      = require("src.utils.Math")
 	local Player    = require("src.game.entity.Player")
+	local TileLayer = require("src.game.TileLayer")
 --|
 
-local TileLayer = Yaci:newclass("TileLayer")
+
+
 
 local GameWorld = Yaci:newclass("GameWorld")
 
@@ -19,7 +21,7 @@ function GameWorld:init()
 	self.name = "GameWorld"
 	self.tilesets = {}
 	self.tiles = {}
-    self.tilemap = {}
+    self.layers = {}
     self.entities = {}
 	self.cameraPosition = Vector2D:new(0, 0)
 	self.cameraSize = Vector2D:new(296, 224)
@@ -78,16 +80,11 @@ function GameWorld:loadMap(mapName)
 		for index, layer in pairs(mapData["layers"]) do
 			if layer["type"] == "tilelayer" then
 
-				local newLayer = {}
-
 				self.loadingStatus = "Loading tilelayer ".. layer["name"]
+				local newLayer = TileLayer:new(layer, self)
+
+				table.insert(self.layers, newLayer)
 				coroutine.yield()
-
-				newLayer["data"] = layer["data"]
-				newLayer["width"] = layer["width"]
-				newLayer["height"] = layer["height"]
-
-				self.tilemap[layer["name"]] = newLayer
 			end
 
 			if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
@@ -121,16 +118,6 @@ function GameWorld:setCameraFocus(entity)
 	self.cameraFocus = entity
 end
 
-function GameWorld:getTile(layer, x, y, tile)
-
-
-	--self.tilemap[layer]["data"][tilePos] = tile
-end
-
-function GameWorld:getTileImage(id)
-
-end
-
 function GameWorld:addEntity(entity)
 	table.insert(self.entities, entity)
 	entity.world = self
@@ -145,90 +132,20 @@ function GameWorld:isEntityVisible(entity)
 	and (epos.y-entity.body.halfHeight) < cpos.y+self.cameraSize.y)
 end
 
-function GameWorld:iterateLayer(layer)
-
-	local index = 0
-	return function()
-		index = index+1
-
-		local width = layer["width"]
-		local height = layer["height"]
-
-		if index > (width*height)  then return end
-		local tileID = layer["data"][index]
-
-		local i = index - 1
-		local x = i%width
-		local y = (i - x)/width
-		x, y = x + 1, y + 1
-
-		return tileID, x, y
+function GameWorld:getLayer(name)
+	for index, layer in pairs(self.layers) do
+		if layer.name == name then return layer end
 	end
 end
 
-function GameWorld:visibleLayerIterate(layer)
-
-	local camPosX, camPosY = self.cameraPosition.x, self.cameraPosition.y
-	local camSizeX, camSizeY = self.cameraSize.x, self.cameraSize.y
-
-	local gridPosX, gridPosY = math.floor(camPosX/self.tileSize), math.floor(camPosY/self.tileSize)
-
-	local gridSizeX, gridSizeY = math.floor(camSizeX/self.tileSize), math.floor(camSizeY/self.tileSize)
-
-	local topLeftX, topLeftY = gridPosX-1, gridPosY-1
-	local bottomLeftX, bottomLeftY = (gridPosX+gridSizeX)+1, (gridPosY+gridSizeY)+1
-	
-	local minX, minY = topLeftX, topLeftY
-	local maxX, maxY = bottomLeftX, bottomLeftY
-
-	minX = (minX > 0) and minX or 1
-	minY = (minY > 0) and minY or 0
-
-
-	local width = layer["width"]
-	local height = layer["height"]
-
-	maxX = (maxX <= width) and maxX or width
-	maxY = (maxY <= height) and maxY or height
-
-	local minIndex = minX + minY*width
-	local maxIndex = maxX + maxY*width
-
-
-
-	local idx = minIndex-1
-
-	return function()
-		idx = idx + 1
-		if idx > maxIndex then return end
-
-		
-
-		local tileID = layer["data"][idx]
-		local i = idx - 1
-		local x = i%width
-		local y = (i - x)/width
-		x, y = x + 1, y + 1
-		return tileID, x, y
+function GameWorld:getLayerByZ(zIndex)
+	for index, layer in pairs(self.layers) do
+		if layer.renderOrder == zIndex then return layer end
 	end
-
 end
 
-function GameWorld:renderLayer(layer)
-	love.graphics.setColor(1, 1, 1)
-
-
-
-	for tileID, x, y in self:visibleLayerIterate(layer) do
-		
-
-		if tileID > 0 then
-			local tile = self.tiles[tileID]
-			love.graphics.draw(tile.image, tile.quad, (x-1)*self.tileSize, (y-1)*self.tileSize)
-		end
-	end
-
-
+function GameWorld:getLayers()
+	return self.layers
 end
 
 function GameWorld:render()
@@ -237,19 +154,22 @@ function GameWorld:render()
 	love.graphics.push()
 	love.graphics.translate(-self.cameraPosition.x, -self.cameraPosition.y)
 	
-	self:renderLayer(self.tilemap["Background"])
+	for i = -5, 0 do
+		local l = self:getLayerByZ(i)
+		if l then l:render() end
+	end
 
-
-	self:renderLayer(self.tilemap["Collide"])
-	
+	-- render entities at index 0
 	for idx, entity in pairs(self.entities) do
 		if self:isEntityVisible(entity) then
 			entity:render()
 		end
 	end
-	
 
-	self:renderLayer(self.tilemap["Foreground"])
+	for i = 1, 5 do
+		local l = self:getLayerByZ(i)
+		if l then l:render() end
+	end
     
 	love.graphics.pop()
 	
@@ -288,55 +208,57 @@ function GameWorld:update(delta)
 		
 		local applyGravity = true
 
-		--for tileID, xIndex, yIndex in self:iterateLayer(self.tilemap["Collide"]) do
-		for tileID, xIndex, yIndex in self:visibleLayerIterate(self.tilemap["Collide"]) do
-			if tileID > 0 then 
-				local extents = entity:getNextFrameExtents()
+		for _, layer in pairs(self:getLayers()) do
+			if layer:isSolid() then
+				for tileID, xIndex, yIndex in layer:iterateActiveArea() do
+					if tileID > 0 then 
+						local extents = entity:getNextFrameExtents()
 
-				local x = (xIndex-1)*self.tileSize
-				local y = (yIndex-1)*self.tileSize
-				local half = self.tileSize/2
+						local x = (xIndex-1)*self.tileSize
+						local y = (yIndex-1)*self.tileSize
+						local half = self.tileSize/2
 					
-				local tileBounds = Rect:new(x+half, y+half, half, half)
-				local sx, sy = extents:overlaps(tileBounds)
-				if sx and sy then
-						
-					-- find collision normal
-					local d = math.sqrt(sx*sx + sy*sy)
-					local nx, ny = sx/d, sy/d
+						local tileBounds = Rect:new(x+half, y+half, half, half)
+						local sx, sy = extents:overlaps(tileBounds)
+						if sx and sy then
+							
+							-- find collision normal
+							local d = math.sqrt(sx*sx + sy*sy)
+							local nx, ny = sx/d, sy/d
 
-					--print(nx, ny)
-					-- relative velocity
-					local vx, vy = entity.velocity.x, entity.velocity.y
+							--print(nx, ny)
+							-- relative velocity
+							local vx, vy = entity.velocity.x, entity.velocity.y
 
-					-- penetration speed
-					local ps = vx*nx + vy*ny
+							-- penetration speed
+							local ps = vx*nx + vy*ny
 
-					if ps <= 0 then
-						if entity.destroyOnTileCollide == true then
-							entity.markedForRemoval = true
-							entity:destroy()
-						else
-							entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
-						end
-						entity:collisionTileCallback(tile, nx, ny)
-						if ny == -1 then
-							if entity.hasMass == true then
-								applyGravity = false
-								entity.velocity.y = 0
-								entity.isTouchingGround = true
-							end
-						end
-						if ny == 1 then
-							if entity.hasMass then
-								entity.velocity.y = -(entity.velocity.y*0.3)
+							if ps <= 0 then
+								if entity.destroyOnTileCollide == true then
+									entity.markedForRemoval = true
+									entity:destroy()
+								else
+									entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
+								end
+								entity:collisionTileCallback(tile, nx, ny)
+								if ny == -1 then
+									if entity.hasMass == true then
+										applyGravity = false
+										entity.velocity.y = 0
+										entity.isTouchingGround = true
+									end
+								end
+								if ny == 1 then
+									if entity.hasMass then
+										entity.velocity.y = -(entity.velocity.y*0.3)
+									end
+								end
 							end
 						end
 					end
 				end
 			end
 		end
-
 
 		if applyGravity == true and entity.hasMass == true then
 			entity.velocity.y = entity.velocity.y + 0.5
@@ -348,24 +270,20 @@ function GameWorld:update(delta)
 			entity:update(delta)
 		end
 
-		-- remove entities marked for destruction
-        if entity.markedForRemoval then
-            self.entities[idx] = nil
-            --return
-        end
-
 		-- if entities should be destroyed offscreen
 		-- check for them and do so here
 		if entity.destroyWhenOffScreen then
 			if not self:isEntityVisible(entity) then
 				entity:destroy()
 				entity.markedForRemoval = true
-				--return
 			end
 		end
 
+		-- remove entities marked for destruction
+        if entity.markedForRemoval then
+            self.entities[idx] = nil
+        end
     end
 end
-
 
 return GameWorld
