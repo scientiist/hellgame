@@ -25,7 +25,7 @@ function GameLoop:initialize()
 		resizable = false,
 		fullscreen = false,
 	})
-	love.graphics.setBackgroundColor(0.2, 0.15, 0.15)
+	love.graphics.setBackgroundColor(0, 0, 0)
 end
 
 function GameLoop:tick()

@@ -4,17 +4,14 @@
 	local Rect      = require("src.datatypes.Rect")
 	local LoveImage = require("src.datatypes.LoveImage")
 	local Math      = require("src.utils.Math")
-	local Player    = require("src.game.entity.Player")
 	local TileLayer = require("src.game.TileLayer")
 --|
-
-
-
 
 local GameWorld = Yaci:newclass("GameWorld")
 
 local EntityLoaderList = {
-	["Player"] = Player
+	["Player"] = require("src.game.entity.Player"),
+	["ANDGate"] = require("src.game.entity.ANDGate"),
 }
 
 function GameWorld:init()
@@ -37,19 +34,22 @@ function GameWorld:init()
 	self.height = 0
 end
 
+function GameWorld:loadStatus(string)
+	self.loadingStatus = string
+	coroutine.yield()
+end
+
 function GameWorld:loadMap(mapName)
 	local co = coroutine.create(function()
-		self.loadingStatus = "Getting mapdata file..."
+		self:loadStatus("Getting mapdata file...")
 		local mapData = require("assets/levels/"..mapName)
 
 		self.width = mapData["width"]
 		self.height = mapData["height"]
 
-		self.loadingStatus = "Loading tiles..."
-		coroutine.yield()
+		self:loadStatus("Loading tiles...")
 		for index, tileset in pairs(mapData["tilesets"]) do
-			self.loadingStatus = "Loading tileset " .. tileset["name"] .. "..."
-			coroutine.yield()
+			self:loadStatus("Loading tileset " .. tileset["name"] .. "...")
 			local newTileset = {}
 
 			local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
@@ -75,21 +75,19 @@ function GameWorld:loadMap(mapName)
 		end
 
 
-		self.loadingStatus = "Loading layers..."
-		coroutine.yield()
+		self:loadStatus("Loading layers...")
 		for index, layer in pairs(mapData["layers"]) do
 			if layer["type"] == "tilelayer" then
 
-				self.loadingStatus = "Loading tilelayer ".. layer["name"]
-				local newLayer = TileLayer:new(layer, self)
+				self:loadStatus("Loading tilelayer ".. layer["name"])
 
+				local newLayer = TileLayer:new(layer, self)
 				table.insert(self.layers, newLayer)
-				coroutine.yield()
+				
 			end
 
 			if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
-				self.loadingStatus = "Loading objects..."
-				coroutine.yield()
+				self:loadStatus("Loading objects...")
 				for index, entity in pairs(layer["objects"]) do
 					local type = entity["type"]
 					local entityClass = EntityLoaderList[type]
@@ -106,9 +104,9 @@ function GameWorld:loadMap(mapName)
 				end
 			end
 		end
-		self.loadingStatus = "Done!"
+		
 		self.mapLoaded = true
-		coroutine.yield()
+		self:loadStatus("Done!")
 	end)
 
 	return co
@@ -190,6 +188,28 @@ function GameWorld:render()
 	love.graphics.pop()
 end
 
+function GameWorld:solveCollision(entity, normal, separation, tile)
+	if entity.destroyOnTileCollide == true then
+		entity.markedForRemoval = true
+		entity:destroy()
+	else
+		entity.nextPosition = entity.nextPosition + separation
+	end
+	entity:collisionTileCallback(tile, normal.x, normal.y)
+	if normal.y == -1 then
+		if entity.hasMass == true then
+			applyGravity = false
+			entity.velocity.y = 0
+			entity.isTouchingGround = true
+		end
+	end
+	if normal.y == 1 then
+		if entity.hasMass then
+			entity.velocity.y = -(entity.velocity.y*0.3)
+		end
+	end
+end
+
 function GameWorld:update(delta)
 
 	if self.cameraFocus then
@@ -210,54 +230,9 @@ function GameWorld:update(delta)
 
 		for _, layer in pairs(self:getLayers()) do
 			if layer:isSolid() then
-				for tileID, xIndex, yIndex in layer:iterateActiveArea() do
-					if tileID > 0 then 
-						local extents = entity:getNextFrameExtents()
-
-						local x = (xIndex-1)*self.tileSize
-						local y = (yIndex-1)*self.tileSize
-						local half = self.tileSize/2
-					
-						local tileBounds = Rect:new(x+half, y+half, half, half)
-						local sx, sy = extents:overlaps(tileBounds)
-						if sx and sy then
-							
-							-- find collision normal
-							local d = math.sqrt(sx*sx + sy*sy)
-							local nx, ny = sx/d, sy/d
-
-							--print(nx, ny)
-							-- relative velocity
-							local vx, vy = entity.velocity.x, entity.velocity.y
-
-							-- penetration speed
-							local ps = vx*nx + vy*ny
-
-							if ps <= 0 then
-								if entity.destroyOnTileCollide == true then
-									entity.markedForRemoval = true
-									entity:destroy()
-								else
-									entity.nextPosition = entity.nextPosition + Vector2D:new(sx, sy)
-								end
-								entity:collisionTileCallback(tile, nx, ny)
-								if ny == -1 then
-									if entity.hasMass == true then
-										applyGravity = false
-										entity.velocity.y = 0
-										entity.isTouchingGround = true
-									end
-								end
-								if ny == 1 then
-									if entity.hasMass then
-										entity.velocity.y = -(entity.velocity.y*0.3)
-									end
-								end
-							end
-						end
-					end
-				end
+				local collision = layer:entityCollisionCheck(entity)
 			end
+			
 		end
 
 		if applyGravity == true and entity.hasMass == true then

@@ -16,6 +16,13 @@ function Vector2D:new(x, y)
     return setmetatable(newP, getmetatable(self))
 end
 
+function Vector2D:lerp(secondVec, percent)
+
+    local x = self.x + ((secondVec.x-self.x) * percent)
+    local y = self.y + ((secondVec.y-self.y) * percent)
+    return Vector2D:new(x, y)
+end
+
 function Vector2D:out()
     return self.x, self.y
 end

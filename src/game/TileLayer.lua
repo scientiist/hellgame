@@ -1,6 +1,7 @@
 --| imports
     local Yaci      = require("src.libs.Yaci")
-    local Vector2D  = require("src.datatypes.Vector2D")
+	local Vector2D  = require("src.datatypes.Vector2D")
+	local Rect  = require("src.datatypes.Rect")
     local Math      = require("src.utils.Math")
 --|
 
@@ -93,6 +94,43 @@ function TileLayer:iterateActiveArea()
 		local y = (i - x)/width
 		x, y = x + 1, y + 1
 		return tileID, x, y
+	end
+end
+
+function TileLayer:entityCollisionCheck(entity)
+
+	for tileID, xIndex, yIndex in self:iterateActiveArea() do
+		if tileID > 0 then
+
+		--	local curExtents = entity:getExtents()
+		--	local nextExtents = entity:getNextFrameExtents()
+				local extents = entity:getNextFrameExtents()
+
+
+				local x = (xIndex-1)*self.world.tileSize
+				local y = (yIndex-1)*self.world.tileSize
+				local half = self.world.tileSize/2
+			
+				local tileBounds = Rect:new(x+half, y+half, half, half)
+				local sx, sy = extents:overlaps(tileBounds)
+				if sx and sy then
+					
+					-- find collision normal
+					local d = math.sqrt(sx*sx + sy*sy)
+					local nx, ny = sx/d, sy/d
+
+					--print(nx, ny)
+					-- relative velocity
+					local vx, vy = entity.velocity.x, entity.velocity.y
+
+					-- penetration speed
+					local ps = vx*nx + vy*ny
+
+					if ps <= 0 then
+						self.world:solveCollision(entity, Vector2D:new(nx, ny), Vector2D:new(sx, sy), tileID)
+					end
+				end
+		end
 	end
 end
 
