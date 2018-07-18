@@ -89,19 +89,16 @@ function GameWorld:loadMap(mapName)
 				
 			end
 			if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
-				print("gank2")
 				self:loadStatus("Loading objects...")
 				for index, entity in pairs(layer["objects"]) do
-					print(entity)
 					local type = entity["type"]
-					print("AAAAAAAAAAAAAAAAa")
 					local entityClass = EntityLoaderList[type]
 					if entityClass then
 						local instance = entityClass:new()
 
 						instance:setPosition(Vector2D:new(entity["x"], entity["y"]))
 						self:addEntity(instance)
-
+						print("ADD entity: "..entity["type"])
 						if entity["properties"]["takeCameraFocus"] == true then
 							self:setCameraFocus(instance)
 						end

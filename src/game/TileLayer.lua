@@ -24,7 +24,6 @@ function TileLayer:init(layerdata, world)
 		for tileID, x, y in self:iterate() do
 			if tileID > 0 then
 				local tile = self.world.tiles[tileID]
-				print(tile)
 				if tile then
 					love.graphics.draw(tile.image, tile.quad, (x-1)*self.world.tileSize, (y-1)*self.world.tileSize)
 				end
@@ -120,7 +119,6 @@ function TileLayer:entityCollisionCheck(entity)
 					local d = math.sqrt(sx*sx + sy*sy)
 					local nx, ny = sx/d, sy/d
 
-					--print(nx, ny)
 					-- relative velocity
 					local vx, vy = entity.velocity.x, entity.velocity.y
 

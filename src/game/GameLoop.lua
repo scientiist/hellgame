@@ -4,6 +4,7 @@
 	local Player     = require("src.game.entity.Player")
 	local Vector2D   = require("src.datatypes.Vector2D")
 	local TestEntity = require("src.game.entity.TestEntity")
+	local Math       = require("src.utils.Math")
 --|
 
 local GameLoop = {}
@@ -13,14 +14,22 @@ local settings = {
     upscale    = 4,
 }
 
-local testRoom = GameWorld:new()
-local loadThread = testRoom:loadMap("test3")
+--local testRoom = GameWorld:new()
+--local loadThread = testRoom:loadMap("test3")
+love.graphics.setDefaultFilter("nearest", "nearest")
+local fonts = {
+	pixelade = love.graphics.newFont("assets/pixelade.ttf", 12),
+	pressStart = love.graphics.newFont("assets/PrStart.ttf", 12),
+	vga = love.graphics.newFont("assets/vgaFont.ttf", 16),
+	default = love.graphics.newFont(12)
+}
 
-
+local inWorld = false
+local inc = 0
 
 
 function GameLoop:initialize()
-	love.graphics.setDefaultFilter("nearest", "nearest")
+	
     love.window.setMode(settings.resolution.x*settings.upscale, settings.resolution.y*settings.upscale, {
 		resizable = false,
 		fullscreen = false,
@@ -33,30 +42,53 @@ function GameLoop:tick()
 end
 
 function GameLoop:step(delta)
-	if testRoom.mapLoaded == true then
-		testRoom:update(delta)
+	if inWorld == false then
+
 	else
-		love.timer.sleep(1/10)
-		coroutine.resume(loadThread)
+		if testRoom.mapLoaded == true then
+			testRoom:update(delta)
+		else
+			love.timer.sleep(1/10)
+			coroutine.resume(loadThread)
+		end
 	end
-	
 
-
+	inc = inc + 1/200
 end
 
 function GameLoop:render()
 	
 	love.graphics.push()
 	love.graphics.scale(settings.upscale, settings.upscale)
-	----------------------------------
-	if testRoom.mapLoaded then
-		testRoom:render()
+
+	if inWorld == false then
+		love.graphics.setColor(1, 0.4, 0.5)
+		love.graphics.setFont(fonts.vga)
+		love.graphics.printf("Mister Shotgun", 0, 32, settings.resolution.x, "center")
+		love.graphics.setColor(0.7, 0.7, 0.7)
+		love.graphics.setFont(fonts.pixelade)
+		love.graphics.printf("A computer game by Josh O'Leary.", 0, 48, settings.resolution.x, "center")
+
+		love.graphics.printf("Arrow keys to move and jump.", 0, 128, settings.resolution.x, "center")
+		love.graphics.printf("Spacebar to shoot.", 0, 140, settings.resolution.x, "center")
+
+
+		local col = math.abs(math.sin(inc * 4 * math.pi))
+		love.graphics.setColor(col, col, col)
+		love.graphics.printf("Press space to start...", 0, 200, settings.resolution.x, "center")
+
+		love.graphics.setFont(fonts.default)
+		love.graphics.setColor(1, 1, 1)
 	else
-		
-		love.graphics.printf(testRoom.loadingStatus, 0, testRoom.cameraSize.y/2, testRoom.cameraSize.x, "center")
+		----------------------------------
+		if testRoom.mapLoaded then
+			testRoom:render()
+		else
+			
+			love.graphics.printf(testRoom.loadingStatus, 0, testRoom.cameraSize.y/2, testRoom.cameraSize.x, "center")
+		end
+
 	end
-
-
 	----------------------------------
     love.graphics.pop()
 end

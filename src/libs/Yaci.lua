@@ -190,7 +190,6 @@ do	-- keep local things inside
       end
      
       local function newmethod(class, name, meth)
-        print(class, name, meth)
         inst_stuff[name] = meth;
         if metaObj[class].virtuals[name]~=nil then 
             metaObj[class].virtuals[name] = meth	

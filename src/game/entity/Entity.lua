@@ -78,7 +78,6 @@ function Entity:render()
         love.graphics.rectangle("line", renderX, renderY, self.body.halfWidth*2, self.body.halfHeight*2)
     end
 
-    --print(self, self:class())]
 end
 
 
