@@ -14,8 +14,8 @@ local settings = {
     upscale    = 4,
 }
 
---local testRoom = GameWorld:new()
---local loadThread = testRoom:loadMap("test3")
+local testRoom = GameWorld:new()
+local loadThread
 love.graphics.setDefaultFilter("nearest", "nearest")
 local fonts = {
 	pixelade = love.graphics.newFont("assets/pixelade.ttf", 12),
@@ -43,7 +43,12 @@ end
 
 function GameLoop:step(delta)
 	if inWorld == false then
+		inc = inc + 1/200
 
+		if love.keyboard.isDown("space") then
+			inWorld = true
+			loadThread = testRoom:loadMap("test3")
+		end
 	else
 		if testRoom.mapLoaded == true then
 			testRoom:update(delta)
@@ -53,7 +58,9 @@ function GameLoop:step(delta)
 		end
 	end
 
-	inc = inc + 1/200
+	
+
+
 end
 
 function GameLoop:render()
