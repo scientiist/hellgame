@@ -1,14 +1,14 @@
 return {
   version = "1.1",
   luaversion = "5.1",
-  tiledversion = "1.1.5",
+  tiledversion = "1.0.3",
   orientation = "orthogonal",
   renderorder = "right-down",
   width = 128,
   height = 192,
   tilewidth = 8,
   tileheight = 8,
-  nextobjectid = 59,
+  nextobjectid = 65,
   backgroundcolor = { 0, 0, 0 },
   properties = {},
   tilesets = {
@@ -103,6 +103,35 @@ return {
       terrains = {},
       tilecount = 64,
       tiles = {}
+    },
+    {
+      name = "entitypreviews",
+      firstgid = 193,
+      filename = "../../tiled/entitypreviews.tsx",
+      tilewidth = 16,
+      tileheight = 24,
+      spacing = 0,
+      margin = 0,
+      tileoffset = {
+        x = 0,
+        y = 0
+      },
+      grid = {
+        orientation = "orthogonal",
+        width = 1,
+        height = 1
+      },
+      properties = {},
+      terrains = {},
+      tilecount = 1,
+      tiles = {
+        {
+          id = 0,
+          image = "../tilesets/entitypreviews/player.png",
+          width = 16,
+          height = 24
+        }
+      }
     }
   },
   layers = {
@@ -539,15 +568,16 @@ return {
       properties = {},
       objects = {
         {
-          id = 41,
-          name = "Player",
-          type = "Player",
+          id = 64,
+          name = "PlayerSpawn",
+          type = "PlayerSpawn",
           shape = "rectangle",
-          x = 32.167,
-          y = 65.3333,
+          x = 200,
+          y = 94.6667,
           width = 16,
           height = 24,
           rotation = 0,
+          gid = 193,
           visible = true,
           properties = {
             ["takeCameraFocus"] = true

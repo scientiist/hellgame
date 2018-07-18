@@ -10,7 +10,7 @@
 local GameWorld = Yaci:newclass("GameWorld")
 
 local EntityLoaderList = {
-	["Player"] = require("src.game.entity.Player"),
+	["PlayerSpawn"] = require("src.game.entity.Player"),
 	["ANDGate"] = require("src.game.entity.ANDGate"),
 }
 
@@ -49,27 +49,30 @@ function GameWorld:loadMap(mapName)
 
 		self:loadStatus("Loading tiles...")
 		for index, tileset in pairs(mapData["tilesets"]) do
-			self:loadStatus("Loading tileset " .. tileset["name"] .. "...")
-			local newTileset = {}
 
-			local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
+			if tileset["name"] ~= "entitypreviews" then
+				self:loadStatus("Loading tileset " .. tileset["name"] .. "...")
+				local newTileset = {}
+				
+				local image = LoveImage:new("assets/tilesets/"..tileset["name"]..".png")
 
-			local imageHeight = tileset["imageheight"]
-			local imageWidth = tileset["imagewidth"]
+				local imageHeight = tileset["imageheight"]
+				local imageWidth = tileset["imagewidth"]
 
 
-			newTileset.image = image
-			self.tilesets[tileset["name"]] = newTileset
+				newTileset.image = image
+				self.tilesets[tileset["name"]] = newTileset
 
-			local i = 0
-			for y = 1, imageHeight/self.tileSize do
-				for x = 1, imageWidth/self.tileSize do
-					
-					self.tiles[i+tileset["firstgid"]] = {
-						image = self.tilesets[tileset["name"]].image,
-						quad = love.graphics.newQuad((x-1)*self.tileSize, (y-1)*self.tileSize, self.tileSize, self.tileSize, image:getDimensions())
-					}
-					i = i + 1
+				local i = 0
+				for y = 1, imageHeight/self.tileSize do
+					for x = 1, imageWidth/self.tileSize do
+						
+						self.tiles[i+tileset["firstgid"]] = {
+							image = self.tilesets[tileset["name"]].image,
+							quad = love.graphics.newQuad((x-1)*self.tileSize, (y-1)*self.tileSize, self.tileSize, self.tileSize, image:getDimensions())
+						}
+						i = i + 1
+					end
 				end
 			end
 		end
@@ -85,11 +88,13 @@ function GameWorld:loadMap(mapName)
 				table.insert(self.layers, newLayer)
 				
 			end
-
 			if layer["type"] == "objectgroup" and layer["name"] == "Entities" then
+				print("gank2")
 				self:loadStatus("Loading objects...")
 				for index, entity in pairs(layer["objects"]) do
+					print(entity)
 					local type = entity["type"]
+					print("AAAAAAAAAAAAAAAAa")
 					local entityClass = EntityLoaderList[type]
 					if entityClass then
 						local instance = entityClass:new()

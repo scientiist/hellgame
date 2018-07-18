@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" tiledversion="1.1.5" orientation="orthogonal" renderorder="right-down" width="128" height="192" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#000000" nextobjectid="59">
+<map version="1.0" tiledversion="1.0.3" orientation="orthogonal" renderorder="right-down" width="128" height="192" tilewidth="8" tileheight="8" backgroundcolor="#000000" nextobjectid="65">
  <tileset firstgid="1" source="fgtileset.tsx"/>
  <tileset firstgid="65" source="tileset.tsx"/>
  <tileset firstgid="129" source="bgtileset.tsx"/>
+ <tileset firstgid="193" source="entitypreviews.tsx"/>
  <layer name="Background" width="128" height="192">
   <properties>
    <property name="index" type="int" value="-1"/>
@@ -404,7 +405,7 @@
 </data>
  </layer>
  <objectgroup name="Entities">
-  <object id="41" name="Player" type="Player" x="32.167" y="65.3333" width="16" height="24">
+  <object id="64" name="PlayerSpawn" type="PlayerSpawn" gid="193" x="200" y="94.6667" width="16" height="24">
    <properties>
     <property name="takeCameraFocus" type="bool" value="true"/>
    </properties>

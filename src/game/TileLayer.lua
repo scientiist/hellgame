@@ -17,19 +17,20 @@ function TileLayer:init(layerdata, world)
 	self.world = world
     self.solid = layerdata["properties"]["solid"]
     self.canvas = love.graphics.newCanvas(self.width*8, self.height*8)
-
-
-    love.graphics.setCanvas(self.canvas)
-        --love.graphics.clear()
-        love.graphics.setBlendMode("alpha")
-        love.graphics.setColor(1, 1, 1)
-        for tileID, x, y in self:iterate() do
-            if tileID > 0 then
-                local tile = self.world.tiles[tileID]
-                love.graphics.draw(tile.image, tile.quad, (x-1)*self.world.tileSize, (y-1)*self.world.tileSize)
+	love.graphics.setCanvas(self.canvas)
+		--love.graphics.clear()
+		--love.graphics.setBlendMode("alpha")
+		love.graphics.setColor(1, 1, 1)
+		for tileID, x, y in self:iterate() do
+			if tileID > 0 then
+				local tile = self.world.tiles[tileID]
+				print(tile)
+				if tile then
+					love.graphics.draw(tile.image, tile.quad, (x-1)*self.world.tileSize, (y-1)*self.world.tileSize)
+				end
             end
-        end
-    love.graphics.setCanvas()
+		end
+	love.graphics.setCanvas()
 end
 
 function TileLayer:iterate()

@@ -13,7 +13,7 @@ end
 
 local updateTrack = 0
 local tick = 0
-
+ 
 function love.update(delta)
 	updateTrack = updateTrack + delta
 	tick = tick + delta
